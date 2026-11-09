@@ -6,6 +6,7 @@ import br.com.davidbuzatto.jsge.imgui.GuiLabel;
 import br.com.davidbuzatto.jsge.imgui.GuiTextField;
 import java.awt.Color;
 import java.util.Random;
+import simuladores.Launcher;
 
 /**
  * Simulador Gráfico de Árvore Rubro-Negra (Red-Black Tree).
@@ -59,6 +60,12 @@ public class RBTSimulator extends EngineFrame {
     private GuiButton    btnClear;
     private GuiButton    btnResetView;
 
+    // Botões do Menu / Seleção de Aba Principal
+    private GuiButton    btnMenu;
+    private GuiButton    btnTabBST;
+    private GuiButton    btnTabAVL;
+    private GuiButton    btnTabRBT;
+
     private String  statusMsg   = "Pronto para interagir.";
     private boolean statusError = false;
 
@@ -77,8 +84,8 @@ public class RBTSimulator extends EngineFrame {
     private static final Color C_EDGE    = new Color(90, 90, 90);
     private static final Color C_PANEL   = new Color(248, 240, 240);
     private static final Color C_HDR     = new Color(95, 15, 15);
-    private static final Color C_OK      = new Color(0, 130, 0);
-    private static final Color C_ERR     = new Color(200, 0, 0);
+    private static final Color C_OK      = new Color(140, 255, 160);
+    private static final Color C_ERR     = new Color(255, 140, 140);
     private static final Color C_TXT_LEG = new Color(40, 40, 40);
 
     // =========================================================================
@@ -95,16 +102,18 @@ public class RBTSimulator extends EngineFrame {
     // Construtores
     // =========================================================================
     public RBTSimulator() {
-        this(190, 150);
+        this(-1, -1);
     }
 
     public RBTSimulator(int posX, int posY) {
         super(
             1000, 680,
-            "Árvore Rubro-Negra (Red-Black Tree) - Simulador",
+            "Árvore Rubro-Negra (Red-Black Tree) - Aba Principal",
             60, true, true, false, false, false, false
         );
-        setLocation(posX, posY);
+        if (posX >= 0 && posY >= 0) {
+            setLocation(posX, posY);
+        }
     }
 
     // =========================================================================
@@ -112,7 +121,7 @@ public class RBTSimulator extends EngineFrame {
     // =========================================================================
     @Override
     public void create() {
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
 
         // Sentinela NIL (folha externa padrão, sempre preta)
         NIL = new RBNode(0, RBT_BLACK);
@@ -133,15 +142,58 @@ public class RBTSimulator extends EngineFrame {
         btnClear     = new GuiButton(px + 444, py + 40, 80, 28, "Limpar", this);
         btnResetView = new GuiButton(px + 532, py + 40, 95, 28, "Reset Zoom", this);
 
+        // Barra superior de Menu / Seleção de Aba Principal
+        int tx = 490;
+        int ty = 8;
+        btnMenu   = new GuiButton(tx, ty, 90, 24, "☰ Menu", this);
+        btnTabBST = new GuiButton(tx + 96, ty, 95, 24, "1. BST", this);
+        btnTabAVL = new GuiButton(tx + 197, ty, 95, 24, "2. AVL", this);
+        btnTabRBT = new GuiButton(tx + 298, ty, 110, 24, "● 3. RBT", this);
+
+        btnMenu.setBackgroundColor(new Color(22, 32, 58));
+        btnMenu.setBorderColor(new Color(180, 200, 240));
+        btnMenu.setTextColor(WHITE);
+
+        btnTabBST.setBackgroundColor(new Color(25, 55, 140));
+        btnTabBST.setBorderColor(new Color(180, 200, 240));
+        btnTabBST.setTextColor(WHITE);
+
+        btnTabAVL.setBackgroundColor(new Color(15, 75, 40));
+        btnTabAVL.setBorderColor(new Color(180, 220, 190));
+        btnTabAVL.setTextColor(WHITE);
+
+        btnTabRBT.setBackgroundColor(new Color(255, 215, 0));
+        btnTabRBT.setBorderColor(new Color(180, 140, 0));
+        btnTabRBT.setTextColor(new Color(20, 20, 20));
+
         // Popula com nós de teste
         for (int v : new int[]{20, 15, 25, 10, 18, 22, 30, 5, 12}) {
             rbInsert(v);
         }
-        statusMsg = "Árvore Rubro-Negra criada com 9 elementos.";
+        statusMsg = "Árvore Rubro-Negra criada com 9 nós.";
     }
 
     @Override
     public void update(double delta) {
+        // Atualiza componentes do Menu de Abas
+        btnMenu.update(delta);
+        btnTabBST.update(delta);
+        btnTabAVL.update(delta);
+        btnTabRBT.update(delta);
+
+        if (btnMenu.isMousePressed()) {
+            Launcher.switchTab(this, Launcher.TAB_MENU);
+            return;
+        }
+        if (btnTabBST.isMousePressed()) {
+            Launcher.switchTab(this, Launcher.TAB_BST);
+            return;
+        }
+        if (btnTabAVL.isMousePressed()) {
+            Launcher.switchTab(this, Launcher.TAB_AVL);
+            return;
+        }
+
         tfValue.update(delta);
         btnInsert.update(delta);
         btnDelete.update(delta);
@@ -168,7 +220,7 @@ public class RBTSimulator extends EngineFrame {
             panX = 0;
             panY = 0;
             zoom = 1.0;
-            setStatus("Visualização restaurada ao padrão.", false);
+            setStatus("Visualização restaurada.", false);
         }
 
         // Pan com botão do meio
@@ -205,9 +257,15 @@ public class RBTSimulator extends EngineFrame {
 
         // --- Cabeçalho e Título ---
         fillRectangle(0, 0, getScreenWidth(), 100, C_HDR);
-        drawText("Árvore Rubro-Negra (Red-Black Tree)", 14, 10, 22, WHITE);
-        drawText("Propriedades RBT: Raiz=Preta | NIL=Preto | Pai Vermelho tem Filhos Pretos | Altura Negra Igual",
-                 14, 34, 12, new Color(255, 190, 190));
+        drawText("Árvore Rubro-Negra (Red-Black Tree)", 14, 10, 20, WHITE);
+        drawText("Raiz=Preta | NIL=Preto | Pai Vermelho tem Filhos Pretos | Altura Negra Igual",
+                 14, 34, 11, new Color(255, 190, 190));
+
+        // --- Desenho dos Botões de Menu / Abas ---
+        btnMenu.draw();
+        btnTabBST.draw();
+        btnTabAVL.draw();
+        btnTabRBT.draw();
 
         // --- Desenho dos Componentes ImGUI ---
         lblValor.draw();
@@ -220,7 +278,7 @@ public class RBTSimulator extends EngineFrame {
 
         Color sc = statusError ? C_ERR : C_OK;
         if (statusMsg != null && !statusMsg.isEmpty()) {
-            drawText(statusMsg, 640, 48, 12, sc);
+            drawText(statusMsg, 645, 58, 11, sc);
         }
 
         // --- Painel Gráfico da Árvore ---
@@ -229,7 +287,7 @@ public class RBTSimulator extends EngineFrame {
 
         if (root == NIL || root == null) {
             drawText("Árvore vazia. Digite um valor ou clique em 'Aleatório' para inserir.",
-                     PANEL_X + panelW / 2.0 - 200, PANEL_Y + panelH / 2.0, 16, new Color(180, 140, 140));
+                     PANEL_X + panelW / 2.0 - 220, PANEL_Y + panelH / 2.0, 14, new Color(180, 140, 140));
         } else {
             recalcLayout(panelW);
             drawEdges(root);
@@ -240,21 +298,22 @@ public class RBTSimulator extends EngineFrame {
         int totalNodes = countNodes(root);
         int bh = blackHeight(root);
         String stats = String.format("Nós: %d | Altura Negra (Black Height): %d | Zoom: %.1fx", totalNodes, bh, zoom);
-        drawText(stats, PANEL_X + 12, PANEL_Y + 12, 13, new Color(100, 20, 20));
+        drawText(stats, PANEL_X + 12, PANEL_Y + 12, 12, new Color(100, 20, 20));
 
-        // --- Legenda ---
-        int lx = PANEL_X + panelW - 235;
+        // --- Legenda (dimensionada com folga para fonte monoespaçada) ---
+        int legW = 250;
+        int lx = PANEL_X + panelW - legW - 10;
         int ly = PANEL_Y + 10;
-        fillRoundRectangle(lx - 8, ly - 5, 230, 95, 8, new Color(255, 255, 255, 215));
-        drawRoundRectangle(lx - 8, ly - 5, 230, 95, 8, new Color(200, 150, 150));
-        fillCircle(lx + 10, ly + 10, 10, C_RED_N);
-        drawText("Nó Vermelho (V)", lx + 25, ly + 5, 12, C_TXT_LEG);
-        fillCircle(lx + 10, ly + 32, 10, C_BLACK_N);
-        drawText("Nó Preto (P)", lx + 25, ly + 27, 12, C_TXT_LEG);
-        fillCircle(lx + 10, ly + 54, 10, C_HIGH);
-        drawText("Recém-operado / Rotacionado", lx + 25, ly + 49, 12, C_TXT_LEG);
-        fillRectangle(lx + 4, ly + 72, 12, 10, C_BLACK_N);
-        drawText("NIL (sentinela preta)", lx + 25, ly + 70, 11, new Color(80, 80, 80));
+        fillRoundRectangle(lx, ly, legW, 96, 8, new Color(255, 255, 255, 220));
+        drawRoundRectangle(lx, ly, legW, 96, 8, new Color(200, 150, 150));
+        fillCircle(lx + 16, ly + 16, 9, C_RED_N);
+        drawText("Nó Vermelho (V)", lx + 32, ly + 11, 11, C_TXT_LEG);
+        fillCircle(lx + 16, ly + 38, 9, C_BLACK_N);
+        drawText("Nó Preto (P)", lx + 32, ly + 33, 11, C_TXT_LEG);
+        fillCircle(lx + 16, ly + 60, 9, C_HIGH);
+        drawText("Recém-operado / Destaque", lx + 32, ly + 55, 11, C_TXT_LEG);
+        fillRectangle(lx + 10, ly + 77, 12, 10, C_BLACK_N);
+        drawText("NIL (sentinela preta)", lx + 32, ly + 76, 11, new Color(80, 80, 80));
 
         drawFPS(getScreenWidth() - 80, 12);
     }
@@ -682,41 +741,41 @@ public class RBTSimulator extends EngineFrame {
     private void doInsert() {
         String s = tfValue.getValue().trim();
         if (s.isEmpty()) {
-            setStatus("Digite um valor inteiro para inserir!", true);
+            setStatus("Digite um valor para inserir!", true);
             return;
         }
         try {
             int v = Integer.parseInt(s);
             if (find(root, v)) {
-                setStatus("Chave " + v + " já existe na árvore Rubro-Negra.", true);
+                setStatus("Chave " + v + " já existe na RBT.", true);
             } else {
                 rbInsert(v);
                 hlNode(root, v);
-                setStatus("✔ Inserido com sucesso: " + v + " (propriedades RBT mantidas)", false);
+                setStatus("✔ Inserido: " + v + " (RBT balanceada)", false);
             }
             tfValue.setValue("");
         } catch (NumberFormatException e) {
-            setStatus("Valor inválido! Digite apenas números inteiros.", true);
+            setStatus("Valor inválido! Use apenas inteiros.", true);
         }
     }
 
     private void doDelete() {
         String s = tfValue.getValue().trim();
         if (s.isEmpty()) {
-            setStatus("Digite um valor inteiro para remover!", true);
+            setStatus("Digite um valor para remover!", true);
             return;
         }
         try {
             int v = Integer.parseInt(s);
             if (!find(root, v)) {
-                setStatus("Chave " + v + " não encontrada na árvore.", true);
+                setStatus("Chave " + v + " não encontrada.", true);
             } else {
                 rbDelete(v);
-                setStatus("✔ Removido com sucesso: " + v + " (rebalanceado)", false);
+                setStatus("✔ Removido: " + v + " (rebalanceado)", false);
             }
             tfValue.setValue("");
         } catch (NumberFormatException e) {
-            setStatus("Valor inválido! Digite apenas números inteiros.", true);
+            setStatus("Valor inválido! Use apenas inteiros.", true);
         }
     }
 

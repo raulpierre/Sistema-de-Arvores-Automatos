@@ -6,6 +6,7 @@ import br.com.davidbuzatto.jsge.imgui.GuiLabel;
 import br.com.davidbuzatto.jsge.imgui.GuiTextField;
 import java.awt.Color;
 import java.util.Random;
+import simuladores.Launcher;
 
 /**
  * Simulador Gráfico de Árvore Binária de Busca (BST).
@@ -52,6 +53,12 @@ public class BSTSimulator extends EngineFrame {
     private GuiButton    btnClear;
     private GuiButton    btnResetView;
 
+    // Botões do Menu / Seleção de Aba Principal
+    private GuiButton    btnMenu;
+    private GuiButton    btnTabBST;
+    private GuiButton    btnTabAVL;
+    private GuiButton    btnTabRBT;
+
     private String  statusMsg   = "Pronto para interagir.";
     private boolean statusError = false;
 
@@ -69,8 +76,8 @@ public class BSTSimulator extends EngineFrame {
     private static final Color C_PANEL_BG     = new Color(245, 248, 255);
     private static final Color C_PANEL_BORDER = new Color(180, 190, 220);
     private static final Color C_HEADER_BG    = new Color(25, 55, 140);
-    private static final Color C_OK           = new Color(0, 130, 0);
-    private static final Color C_ERR          = new Color(200, 0, 0);
+    private static final Color C_OK           = new Color(140, 255, 160);
+    private static final Color C_ERR          = new Color(255, 140, 140);
     private static final Color C_TXT_LEG      = new Color(40, 40, 40);
 
     // =========================================================================
@@ -87,16 +94,18 @@ public class BSTSimulator extends EngineFrame {
     // Construtores
     // =========================================================================
     public BSTSimulator() {
-        this(50, 50);
+        this(-1, -1);
     }
 
     public BSTSimulator(int posX, int posY) {
         super(
             1000, 680,
-            "Árvore Binária de Busca (BST) - Simulador",
+            "Árvore Binária de Busca (BST) - Aba Principal",
             60, true, true, false, false, false, false
         );
-        setLocation(posX, posY);
+        if (posX >= 0 && posY >= 0) {
+            setLocation(posX, posY);
+        }
     }
 
     // =========================================================================
@@ -104,7 +113,7 @@ public class BSTSimulator extends EngineFrame {
     // =========================================================================
     @Override
     public void create() {
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
 
         inOrderIdx = new int[]{0};
 
@@ -120,6 +129,30 @@ public class BSTSimulator extends EngineFrame {
         btnClear     = new GuiButton(px + 444, py + 40, 80, 28, "Limpar", this);
         btnResetView = new GuiButton(px + 532, py + 40, 95, 28, "Reset Zoom", this);
 
+        // Barra superior de Menu / Seleção de Aba Principal
+        int tx = 490;
+        int ty = 8;
+        btnMenu   = new GuiButton(tx, ty, 90, 24, "☰ Menu", this);
+        btnTabBST = new GuiButton(tx + 96, ty, 95, 24, "● 1. BST", this);
+        btnTabAVL = new GuiButton(tx + 197, ty, 95, 24, "2. AVL", this);
+        btnTabRBT = new GuiButton(tx + 298, ty, 110, 24, "3. RBT", this);
+
+        btnMenu.setBackgroundColor(new Color(22, 32, 58));
+        btnMenu.setBorderColor(new Color(180, 200, 240));
+        btnMenu.setTextColor(WHITE);
+
+        btnTabBST.setBackgroundColor(new Color(255, 215, 0));
+        btnTabBST.setBorderColor(new Color(180, 140, 0));
+        btnTabBST.setTextColor(new Color(20, 20, 20));
+
+        btnTabAVL.setBackgroundColor(new Color(15, 75, 40));
+        btnTabAVL.setBorderColor(new Color(180, 220, 190));
+        btnTabAVL.setTextColor(WHITE);
+
+        btnTabRBT.setBackgroundColor(new Color(95, 15, 15));
+        btnTabRBT.setBorderColor(new Color(230, 180, 180));
+        btnTabRBT.setTextColor(WHITE);
+
         // Popula com nós iniciais de teste
         for (int v : new int[]{50, 30, 70, 20, 40, 60, 80, 10, 35, 65}) {
             root = insertNode(root, v);
@@ -129,6 +162,25 @@ public class BSTSimulator extends EngineFrame {
 
     @Override
     public void update(double delta) {
+        // Atualiza componentes do Menu de Abas
+        btnMenu.update(delta);
+        btnTabBST.update(delta);
+        btnTabAVL.update(delta);
+        btnTabRBT.update(delta);
+
+        if (btnMenu.isMousePressed()) {
+            Launcher.switchTab(this, Launcher.TAB_MENU);
+            return;
+        }
+        if (btnTabAVL.isMousePressed()) {
+            Launcher.switchTab(this, Launcher.TAB_AVL);
+            return;
+        }
+        if (btnTabRBT.isMousePressed()) {
+            Launcher.switchTab(this, Launcher.TAB_RBT);
+            return;
+        }
+
         // Atualiza componentes ImGUI vinculados a esta janela
         tfValue.update(delta);
         btnInsert.update(delta);
@@ -158,7 +210,7 @@ public class BSTSimulator extends EngineFrame {
             panX = 0;
             panY = 0;
             zoom = 1.0;
-            setStatus("Visualização restaurada ao padrão.", false);
+            setStatus("Visualização restaurada.", false);
         }
 
         // Navegação: pan com o botão do meio do mouse
@@ -195,9 +247,15 @@ public class BSTSimulator extends EngineFrame {
 
         // --- Cabeçalho e Título ---
         fillRectangle(0, 0, getScreenWidth(), 100, C_HEADER_BG);
-        drawText("Árvore Binária de Busca (BST)", 14, 10, 22, WHITE);
-        drawText("Operações de Inserção (put) e Remoção (delete) | Roda do mouse: zoom | Botão do meio: pan",
-                 14, 34, 12, new Color(200, 220, 255));
+        drawText("Árvore Binária de Busca (BST)", 14, 10, 20, WHITE);
+        drawText("Inserção (put) e Remoção (delete) | Roda do mouse: zoom | Botão do meio: pan",
+                 14, 34, 11, new Color(200, 220, 255));
+
+        // --- Desenho dos Botões de Menu / Abas ---
+        btnMenu.draw();
+        btnTabBST.draw();
+        btnTabAVL.draw();
+        btnTabRBT.draw();
 
         // --- Desenho dos Componentes ImGUI ---
         lblValor.draw();
@@ -211,7 +269,7 @@ public class BSTSimulator extends EngineFrame {
         // Linha de status
         Color sc = statusError ? C_ERR : C_OK;
         if (statusMsg != null && !statusMsg.isEmpty()) {
-            drawText(statusMsg, 640, 48, 12, sc);
+            drawText(statusMsg, 645, 58, 11, sc);
         }
 
         // --- Painel Gráfico da Árvore ---
@@ -220,7 +278,7 @@ public class BSTSimulator extends EngineFrame {
 
         if (root == null) {
             drawText("Árvore vazia. Digite um valor ou clique em 'Aleatório' para inserir.",
-                     PANEL_X + panelW / 2.0 - 200, PANEL_Y + panelH / 2.0, 16, new Color(150, 160, 190));
+                     PANEL_X + panelW / 2.0 - 220, PANEL_Y + panelH / 2.0, 14, new Color(150, 160, 190));
         } else {
             recalcLayout(panelW);
             drawEdges(root);
@@ -231,18 +289,19 @@ public class BSTSimulator extends EngineFrame {
         int totalNodes = countNodes(root);
         int treeHeight = treeHeight(root);
         String stats = String.format("Nós: %d | Altura: %d | Zoom: %.1fx", totalNodes, treeHeight, zoom);
-        drawText(stats, PANEL_X + 12, PANEL_Y + 12, 13, new Color(40, 60, 120));
+        drawText(stats, PANEL_X + 12, PANEL_Y + 12, 12, new Color(40, 60, 120));
 
-        // --- Legenda ---
-        int lx = PANEL_X + panelW - 220;
+        // --- Legenda (dimensionada com folga para fonte monoespaçada) ---
+        int legW = 245;
+        int lx = PANEL_X + panelW - legW - 10;
         int ly = PANEL_Y + 10;
-        fillRoundRectangle(lx - 8, ly - 5, 215, 75, 8, new Color(255, 255, 255, 210));
-        drawRoundRectangle(lx - 8, ly - 5, 215, 75, 8, C_PANEL_BORDER);
-        fillCircle(lx + 10, ly + 10, 10, C_NODE_FILL);
-        drawText("Nó comum", lx + 25, ly + 5, 12, C_TXT_LEG);
-        fillCircle(lx + 10, ly + 32, 10, C_NODE_HIGH);
-        drawText("Recém-operado / Destaque", lx + 25, ly + 27, 12, C_TXT_LEG);
-        drawText("Menor à esq. / Maior à dir.", lx + 4, ly + 52, 11, new Color(100, 100, 100));
+        fillRoundRectangle(lx, ly, legW, 76, 8, new Color(255, 255, 255, 220));
+        drawRoundRectangle(lx, ly, legW, 76, 8, C_PANEL_BORDER);
+        fillCircle(lx + 16, ly + 16, 9, C_NODE_FILL);
+        drawText("Nó comum", lx + 32, ly + 11, 11, C_TXT_LEG);
+        fillCircle(lx + 16, ly + 38, 9, C_NODE_HIGH);
+        drawText("Recém-operado / Destaque", lx + 32, ly + 33, 11, C_TXT_LEG);
+        drawText("Menor à esq. / Maior à dir.", lx + 12, ly + 56, 11, new Color(100, 100, 100));
 
         drawFPS(getScreenWidth() - 80, 12);
     }
@@ -413,13 +472,13 @@ public class BSTSimulator extends EngineFrame {
     private void doInsert() {
         String s = tfValue.getValue().trim();
         if (s.isEmpty()) {
-            setStatus("Digite um valor inteiro para inserir!", true);
+            setStatus("Digite um valor para inserir!", true);
             return;
         }
         try {
             int v = Integer.parseInt(s);
             if (contains(root, v)) {
-                setStatus("Chave " + v + " já existe na árvore BST.", true);
+                setStatus("Chave " + v + " já existe na BST.", true);
             } else {
                 root = insertNode(root, v);
                 highlightNode(root, v);
@@ -427,27 +486,27 @@ public class BSTSimulator extends EngineFrame {
             }
             tfValue.setValue("");
         } catch (NumberFormatException e) {
-            setStatus("Valor inválido! Digite apenas números inteiros.", true);
+            setStatus("Valor inválido! Use apenas inteiros.", true);
         }
     }
 
     private void doDelete() {
         String s = tfValue.getValue().trim();
         if (s.isEmpty()) {
-            setStatus("Digite um valor inteiro para remover!", true);
+            setStatus("Digite um valor para remover!", true);
             return;
         }
         try {
             int v = Integer.parseInt(s);
             if (!contains(root, v)) {
-                setStatus("Chave " + v + " não encontrada na árvore.", true);
+                setStatus("Chave " + v + " não encontrada.", true);
             } else {
                 root = deleteNode(root, v);
                 setStatus("✔ Removido com sucesso: " + v, false);
             }
             tfValue.setValue("");
         } catch (NumberFormatException e) {
-            setStatus("Valor inválido! Digite apenas números inteiros.", true);
+            setStatus("Valor inválido! Use apenas inteiros.", true);
         }
     }
 
